@@ -29,7 +29,7 @@ public static class JumpDrivePatch
         harmony.Patch(addScreenMethod, prefix: addScreenPatch);
         
         var createTerminalControls =
-            AccessTools.Method(typeof(MyJumpDrive), nameof(MyJumpDrive.CreateTerminalControls));
+            AccessTools.Method(typeof(MyJumpDrive), "CreateTerminalControls");
         var createTerminalControlsPostfix = AccessTools.Method(typeof(JumpDrivePatch), nameof(AddTerminalControl));
         harmony.Patch(createTerminalControls, postfix: createTerminalControlsPostfix);
     }
