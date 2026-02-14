@@ -44,7 +44,6 @@ public class AutoJumpLogic
 
     public void ToggleAutoJump(MyJumpDrive jumpDrive)
     {
-        // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
         if (jumpDrive.EntityId == _trackedJumpDrive)
         {
             Stop();
@@ -64,12 +63,19 @@ public class AutoJumpLogic
         if (MySession.Static == null)
             return;
 
+        if (MySession.Static.ControlledEntity is not MyCockpit)
+        {
+            MyAPIGateway.Utilities.ShowNotification("Player has left the cockpit, automatic jumping disabled");
+            Stop();
+        }
+
         var intervalFrames = (ulong)(Config.Current.CheckIntervalSeconds * 60);
         var currentFrame = MySandboxGame.Static.SimulationFrameCounter;
         if (currentFrame < _lastCheckFrame + intervalFrames)
             return;
 
         _lastCheckFrame = currentFrame;
+        
 
         if (!MyEntities.TryGetEntityById(_trackedJumpDrive, out var entity) || entity is not MyJumpDrive jumpDrive)
         {
@@ -103,7 +109,7 @@ public class AutoJumpLogic
             
             if (angularDifference > AngularToleranceDegrees)
             {
-                MyAPIGateway.Utilities.ShowNotification("Ship orientation changed, automatic jumping disabled.", 5000, "RED");
+                MyAPIGateway.Utilities.ShowNotification("Ship orientation changed, automatic jumping disabled.", 5000, "Red");
                 Stop();
             }
         }
