@@ -72,6 +72,12 @@ public class AutoJumpLogic
 
         _lastCheckFrame = currentFrame;
 
+        if (MySession.Static.ControlledEntity is null)
+        {
+            // Maybe we are on a nexus loading screen or something - we will wait until there is something controlled
+            return;
+        }
+        
         if (MySession.Static.ControlledEntity is not MyCockpit controlledCockpit
             || (_trackedCockpit != 0 && _trackedCockpit != controlledCockpit.EntityId))
         {
