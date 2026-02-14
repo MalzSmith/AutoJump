@@ -38,7 +38,7 @@ public class Plugin : IPlugin
 
     public void Update()
     {
-        AutoJumpLogic.Update();
+        AutoJumpLogic.Instance.Update();
     }
 
     // ReSharper disable once UnusedMember.Global

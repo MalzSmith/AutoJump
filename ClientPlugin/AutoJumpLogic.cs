@@ -3,32 +3,37 @@ using Sandbox;
 using Sandbox.Game.Entities;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
+using VRageMath;
 
 namespace ClientPlugin;
 
-public static class AutoJumpLogic
+public class AutoJumpLogic
 {
-    private static ulong _lastCheckFrame;
-    private static long _trackedJumpDrive;
+    public static AutoJumpLogic Instance = new();
+    private AutoJumpLogic() { }
+    
+    private ulong _lastCheckFrame;
+    private long _trackedJumpDrive;
+    
+    public bool AutomaticJumpInitiated { get; private set; }
+    
 
-    public static bool AutomaticJumpInitiated { get; private set; }
-
-    public static bool IsAutoJumpEnabled(MyJumpDrive jumpDrive)
+    public bool IsAutoJumpEnabled(MyJumpDrive jumpDrive)
     {
         return _trackedJumpDrive == jumpDrive.EntityId;
     }
 
-    public static bool IsAutoJumpEnabled()
+    public bool IsAutoJumpEnabled()
     {
         return _trackedJumpDrive > 0;
     }
 
-    public static void Stop()
+    public void Stop()
     {
         _trackedJumpDrive = 0;
     }
 
-    public static void ToggleAutoJump(MyJumpDrive jumpDrive)
+    public void ToggleAutoJump(MyJumpDrive jumpDrive)
     {
         // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
         if (jumpDrive.EntityId == _trackedJumpDrive)
@@ -41,7 +46,7 @@ public static class AutoJumpLogic
         }
     }
 
-    public static void Update()
+    public void Update()
     {
         if (_trackedJumpDrive == 0)
             return;
@@ -55,7 +60,7 @@ public static class AutoJumpLogic
             return;
 
         _lastCheckFrame = currentFrame;
-        
+
         if (!MyEntities.TryGetEntityById(_trackedJumpDrive, out var entity) || entity is not MyJumpDrive jumpDrive)
         {
             _trackedJumpDrive = 0;
@@ -76,7 +81,7 @@ public static class AutoJumpLogic
 
         if (jumpDrive.CubeGrid.GridSystems.JumpSystem.IsJumping)
             return;
-        
+
         AutomaticJumpInitiated = true;
 
         try

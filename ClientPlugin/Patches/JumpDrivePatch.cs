@@ -36,7 +36,7 @@ public static class JumpDrivePatch
 
     public static bool AddScreenPrefix(MyGuiScreenBase screen)
     {
-        if (!AutoJumpLogic.AutomaticJumpInitiated || screen is not MyGuiScreenMessageBox msgBox )
+        if (!AutoJumpLogic.Instance.AutomaticJumpInitiated || screen is not MyGuiScreenMessageBox msgBox )
             return true;
 
         var callback = msgBox.ResultCallback;
@@ -44,7 +44,7 @@ public static class JumpDrivePatch
         if (callback is null)
         {
             // Distance too short/obstacle/whatever - we should probably stop jumping.
-            AutoJumpLogic.Stop();
+            AutoJumpLogic.Instance.Stop();
             return true;
         }
         
@@ -72,8 +72,8 @@ public static class JumpDrivePatch
                 MyToolbarType.ButtonPanel,
                 MyToolbarType.Seat
             ],
-            Action = AutoJumpLogic.ToggleAutoJump,
-            Writer = (block, builder) => { builder.Append(AutoJumpLogic.IsAutoJumpEnabled(block) ? "On" : "Off"); }
+            Action = AutoJumpLogic.Instance.ToggleAutoJump,
+            Writer = (block, builder) => { builder.Append(AutoJumpLogic.Instance.IsAutoJumpEnabled(block) ? "On" : "Off"); }
         };
 
         MyTerminalControlFactory.AddAction(action);
