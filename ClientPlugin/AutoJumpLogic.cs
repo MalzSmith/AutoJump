@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Sandbox;
 using Sandbox.Game.Entities;
 using Sandbox.Game.World;
@@ -9,14 +10,21 @@ namespace ClientPlugin;
 
 public class AutoJumpLogic
 {
+    // The maximum allowed change in angle compared to the initial state. Exceeding this value will cause jumping to stop.
+    public const double AngularToleranceDegrees = 5;
+
     public static AutoJumpLogic Instance = new();
-    private AutoJumpLogic() { }
-    
+
+    private AutoJumpLogic()
+    {
+    }
+
     private ulong _lastCheckFrame;
     private long _trackedJumpDrive;
-    
+    private Vector3D? _savedOrientation;
+
     public bool AutomaticJumpInitiated { get; private set; }
-    
+
 
     public bool IsAutoJumpEnabled(MyJumpDrive jumpDrive)
     {
@@ -31,6 +39,7 @@ public class AutoJumpLogic
     public void Stop()
     {
         _trackedJumpDrive = 0;
+        _savedOrientation = null;
     }
 
     public void ToggleAutoJump(MyJumpDrive jumpDrive)
@@ -38,7 +47,7 @@ public class AutoJumpLogic
         // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
         if (jumpDrive.EntityId == _trackedJumpDrive)
         {
-            _trackedJumpDrive = 0;
+            Stop();
         }
         else
         {
@@ -46,6 +55,7 @@ public class AutoJumpLogic
         }
     }
 
+    [SuppressMessage("ReSharper", "DuplicatedSequentialIfBodies")]
     public void Update()
     {
         if (_trackedJumpDrive == 0)
@@ -63,18 +73,40 @@ public class AutoJumpLogic
 
         if (!MyEntities.TryGetEntityById(_trackedJumpDrive, out var entity) || entity is not MyJumpDrive jumpDrive)
         {
-            _trackedJumpDrive = 0;
+            Stop();
             return;
         }
 
         if (jumpDrive.Closed || jumpDrive.MarkedForClose)
         {
-            _trackedJumpDrive = 0;
+            Stop();
             return;
         }
 
         if (!jumpDrive.IsWorking || !jumpDrive.IsFunctional)
+        {
+            Stop();
             return;
+        }
+
+        var orientation = jumpDrive.WorldMatrix.GetOrientation().Forward;
+        if (_savedOrientation is null)
+        {
+            _savedOrientation = orientation;
+        }
+        else
+        {
+            var angularDifference =
+                MathHelper.ToDegrees(
+                    Math.Acos(MathHelper.Clamp(Vector3D.Dot(_savedOrientation.Value, orientation), -1, 1))
+                );
+            
+            if (angularDifference > AngularToleranceDegrees)
+            {
+                MyAPIGateway.Utilities.ShowNotification("Ship orientation changed, automatic jumping disabled.", 5000, "RED");
+                Stop();
+            }
+        }
 
         if (!jumpDrive.IsFull)
             return;
