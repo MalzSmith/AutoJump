@@ -21,6 +21,7 @@ public class AutoJumpLogic
 
     private ulong _lastCheckFrame;
     private long _trackedJumpDrive;
+    private long _trackedCockpit;
     private Vector3D? _savedOrientation;
 
     public bool AutomaticJumpInitiated { get; private set; }
@@ -39,6 +40,7 @@ public class AutoJumpLogic
     public void Stop()
     {
         _trackedJumpDrive = 0;
+        _trackedCockpit = 0;
         _savedOrientation = null;
     }
 
@@ -63,20 +65,26 @@ public class AutoJumpLogic
         if (MySession.Static == null)
             return;
 
-        if (MySession.Static.ControlledEntity is not MyCockpit)
-        {
-            MyAPIGateway.Utilities.ShowNotification("Player has left the cockpit, automatic jumping disabled");
-            Stop();
-        }
-
         var intervalFrames = (ulong)(Config.Current.CheckIntervalSeconds * 60);
         var currentFrame = MySandboxGame.Static.SimulationFrameCounter;
         if (currentFrame < _lastCheckFrame + intervalFrames)
             return;
 
         _lastCheckFrame = currentFrame;
-        
 
+        if (MySession.Static.ControlledEntity is not MyCockpit controlledCockpit
+            || (_trackedCockpit != 0 && _trackedCockpit != controlledCockpit.EntityId))
+        {
+            MyAPIGateway.Utilities.ShowNotification("Player has left the cockpit, automatic jumping disabled");
+            Stop();
+            return;
+        }
+
+        if (_trackedCockpit == 0)
+        {
+            _trackedCockpit = controlledCockpit.EntityId;
+        }
+        
         if (!MyEntities.TryGetEntityById(_trackedJumpDrive, out var entity) || entity is not MyJumpDrive jumpDrive)
         {
             Stop();
@@ -106,11 +114,13 @@ public class AutoJumpLogic
                 MathHelper.ToDegrees(
                     Math.Acos(MathHelper.Clamp(Vector3D.Dot(_savedOrientation.Value, orientation), -1, 1))
                 );
-            
+
             if (angularDifference > AngularToleranceDegrees)
             {
-                MyAPIGateway.Utilities.ShowNotification("Ship orientation changed, automatic jumping disabled.", 5000, "Red");
+                MyAPIGateway.Utilities.ShowNotification("Ship orientation changed, automatic jumping disabled.", 5000,
+                    "Red");
                 Stop();
+                return;
             }
         }
 
